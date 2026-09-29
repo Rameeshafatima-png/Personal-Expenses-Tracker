@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ExpenseFlow — Personal Expense Tracker</title>
+    <meta name="description" content="Track and manage daily personal expenses in real time with Cloud Firestore.">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="dark-theme">
+
+    <div class="background-decorations" aria-hidden="true">
+        <div class="glow glow-1"></div>
+        <div class="glow glow-2"></div>
+        <div class="glow glow-3"></div>
+    </div>
+
+    <div class="app-layout">
+
+        <!-- Top Navigation Bar -->
+        <header class="navbar">
+            <div class="brand">
+                <div class="brand-badge">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="12" y1="1" x2="12" y2="23"></line>
+                        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="brand-title">ExpenseFlow</h1>
+                    <span class="brand-subtitle">Personal Expense Tracker</span>
+                </div>
+            </div>
+
+            <div class="nav-right">
+                <div class="connection-status">
+                    <span class="status-dot"></span>
+                    <span class="status-text">Cloud Firestore Live</span>
+                </div>
+                <div class="date-chip" id="todayDate">
+                    Today
+                </div>
+            </div>
+        </header>
+
+        <main class="main-container">
+
+            <!-- Hero & KPI Stats Grid -->
+            <section class="stats-grid">
+                
+                <!-- KPI: Total Expenses -->
+                <div class="kpi-card">
+                    <div class="kpi-header">
+                        <span class="kpi-label">Total Transactions</span>
+                        <div class="kpi-icon kpi-icon-count">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                                <line x1="16" y1="2" x2="16" y2="6"></line>
+                                <line x1="8" y1="2" x2="8" y2="6"></line>
+                                <line x1="3" y1="10" x2="21" y2="10"></line>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="kpi-body">
+                        <div class="kpi-value" id="totalExpenses">0</div>
+                        <span class="kpi-caption">Saved records</span>
+                    </div>
+                    <div class="kpi-bar-track">
+                        <div class="kpi-bar-fill count-bar" style="width: 100%;"></div>
+                    </div>
+                </div>
+
+                <!-- KPI: Total Amount Spent -->
+                <div class="kpi-card highlight-card">
+                    <div class="kpi-header">
+                        <span class="kpi-label">Total Amount Spent</span>
+                        <div class="kpi-icon kpi-icon-amount">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"></path>
+                                <line x1="12" y1="6" x2="12" y2="8"></line>
+                                <line x1="12" y1="16" x2="12" y2="18"></line>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="kpi-body">
+                        <div class="kpi-value amount-value" id="totalAmount">$0.00</div>
+                        <span class="kpi-caption">Cumulative spending</span>
+                    </div>
+                    <div class="kpi-bar-track">
+                        <div class="kpi-bar-fill amount-bar" style="width: 100%;"></div>
+                    </div>
+                </div>
+
+                <!-- KPI: Active Filter / Summary -->
+                <div class="kpi-card">
+                    <div class="kpi-header">
+                        <span class="kpi-label">Top Category</span>
+                        <div class="kpi-icon kpi-icon-category">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path>
+                                <path d="M22 12A10 10 0 0 0 12 2v10z"></path>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="kpi-body">
+                        <div class="kpi-value top-category-value" id="topCategoryDisplay">None</div>
+                        <span class="kpi-caption" id="topCategorySubtext">Highest expense bucket</span>
+                    </div>
+                    <div class="kpi-bar-track">
+                        <div class="kpi-bar-fill category-bar" style="width: 100%;"></div>
+                    </div>
+                </div>
+
+            </section>
+
+            <!-- Dashboard Split Layout: Left Form, Right List -->
+            <div class="content-columns">
+
+                <!-- Left Column: Add Expense Card -->
+                <section class="glass-card form-card">
+                    <div class="card-header">
+                        <div>
+                            <h2 class="card-title">Add New Expense</h2>
+                            <p class="card-description">Record and classify a daily transaction.</p>
+                        </div>
+                        <span class="pill-tag">Quick Entry</span>
+                    </div>
+
+                    <form id="expenseForm" class="expense-form" novalidate>
+                        
+                        <!-- Expense Title -->
+                        <div class="form-group">
+                            <label for="expenseTitle" class="form-label">
+                                <span>Expense Title</span>
+                                <span class="required">*</span>
+                            </label>
+                            <div class="input-container">
+                                <span class="field-icon">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M12 20h9"></path>
+                                        <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                                    </svg>
+                                </span>
+                                <input
+                                    type="text"
+                                    id="expenseTitle"
+                                    name="expenseTitle"
+                                    placeholder="e.g. Grocery shopping, Metro pass"
+                                    required
+                                    autocomplete="off"
+                                >
+                            </div>
+                        </div>
+
+                        <!-- Amount & Quick Chips -->
+                        <div class="form-group">
+                            <div class="label-row">
+                                <label for="expenseAmount" class="form-label">
+                                    <span>Amount ($ USD)</span>
+                                    <span class="required">*</span>
+                                </label>
+                                <div class="quick-amounts" aria-label="Quick amount shortcuts">
+                                    <button type="button" class="quick-chip" data-val="10">+$10</button>
+                                    <button type="button" class="quick-chip" data-val="25">+$25</button>
+                                    <button type="button" class="quick-chip" data-val="50">+$50</button>
+                                    <button type="button" class="quick-chip" data-val="100">+$100</button>
+                                </div>
+                            </div>
+                            <div class="input-container">
+                                <span class="field-icon field-currency">$</span>
+                                <input
+                                    type="number"
+                                    id="expenseAmount"
+                                    name="expenseAmount"
+                                    placeholder="0.00"
+                                    min="0.01"
+                                    step="0.01"
+                                    required
+                                >
+                            </div>
+                        </div>
+
+                        <!-- Category Selector -->
+                        <div class="form-group">
+                            <label for="expenseCategory" class="form-label">
+                                <span>Category</span>
+                                <span class="required">*</span>
+                            </label>
+                            <div class="input-container select-container">
+                                <span class="field-icon" id="categoryIcon">📁</span>
+                                <select id="expenseCategory" name="expenseCategory" required>
+                                    <option value="" disabled selected>Select a category</option>
+                                    <option value="Food">🍔 Food</option>
+                                    <option value="Travel">✈️ Travel</option>
+                                    <option value="Shopping">🛍️ Shopping</option>
+                                    <option value="Bills">⚡ Bills</option>
+                                    <option value="Other">📦 Other</option>
+                                </select>
+                                <span class="select-chevron">▾</span>
+                            </div>
+                        </div>
+
+                        <!-- Date Picker -->
+                        <div class="form-group">
+                            <label for="expenseDate" class="form-label">
+                                <span>Date</span>
+                                <span class="required">*</span>
+                            </label>
+                            <div class="input-container">
+                                <span class="field-icon">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                                        <line x1="16" y1="2" x2="16" y2="6"></line>
+                                        <line x1="8" y1="2" x2="8" y2="6"></line>
+                                        <line x1="3" y1="10" x2="21" y2="10"></line>
+                                    </svg>
+                                </span>
+                                <input
+                                    type="date"
+                                    id="expenseDate"
+                                    name="expenseDate"
+                                    required
+                                >
+                            </div>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <div class="form-action">
+                            <button
+                                type="submit"
+                                class="btn-primary"
+                                id="addExpenseBtn"
+                            >
+                                <svg class="btn-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                                </svg>
+                                <span id="addExpenseBtnText">Add Expense</span>
+                            </button>
+                        </div>
+
+                    </form>
+                </section>
+
+                <!-- Right Column: Expense Table & History -->
+                <section class="glass-card table-card">
+                    <div class="card-header table-card-header">
+                        <div>
+                            <h2 class="card-title">Expense History</h2>
+                            <p class="card-description">Live records from Firebase Firestore</p>
+                        </div>
+                        <div class="badge-count" id="recordCount">
+                            0 records
+                        </div>
+                    </div>
+
+                    <!-- Filter Toolbar -->
+                    <div class="filter-toolbar">
+                        <div class="category-filters" id="categoryFilterBar">
+                            <button type="button" class="filter-btn active" data-filter="All">All</button>
+                            <button type="button" class="filter-btn" data-filter="Food">🍔 Food</button>
+                            <button type="button" class="filter-btn" data-filter="Travel">✈️ Travel</button>
+                            <button type="button" class="filter-btn" data-filter="Shopping">🛍️ Shopping</button>
+                            <button type="button" class="filter-btn" data-filter="Bills">⚡ Bills</button>
+                            <button type="button" class="filter-btn" data-filter="Other">📦 Other</button>
+                        </div>
+
+                        <div class="search-box">
+                            <span class="search-icon">🔍</span>
+                            <input
+                                type="text"
+                                id="searchExpense"
+                                placeholder="Search expenses..."
+                                autocomplete="off"
+                            >
+                        </div>
+                    </div>
+
+                    <!-- Loading State -->
+                    <div class="loading-state" id="loadingState">
+                        <div class="spinner"></div>
+                        <p>Syncing with Cloud Firestore...</p>
+                    </div>
+
+                    <!-- Empty State -->
+                    <div class="empty-state" id="emptyState" style="display: none;">
+                        <div class="empty-illustration">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <path d="M16 16s-1.5-2-4-2-4 2-4 2"></path>
+                                <line x1="9" y1="9" x2="9.01" y2="9"></line>
+                                <line x1="15" y1="9" x2="15.01" y2="9"></line>
+                            </svg>
+                        </div>
+                        <h3>No expenses found</h3>
+                        <p>Use the form on the left to add your first expense record.</p>
+                    </div>
+
+                    <!-- Table Container -->
+                    <div class="table-container" id="tableContainer">
+                        <table class="expenses-table">
+                            <thead>
+                                <tr>
+                                    <th>Expense Title</th>
+                                    <th>Category</th>
+                                    <th>Date</th>
+                                    <th>Amount</th>
+                                    <th class="text-right">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="expenseTableBody">
+                                <!-- Dynamic rows generated via app.js -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                </section>
+
+            </div>
+
+        </main>
+
+        <footer class="app-footer">
+            <p>Personal Expense Tracker &bull; Built with Cloud Firestore &bull; Real-time Multi-device Sync</p>
+        </footer>
+
+    </div>
+
+    <!-- Notification Toast -->
+    <div class="toast-container">
+        <div class="toast" id="toast">
+            <div class="toast-icon-wrap" id="toastIcon">
+                ✓
+            </div>
+            <div class="toast-content">
+                <strong id="toastTitle">Notification</strong>
+                <p id="toastMessage">Action completed successfully.</p>
+            </div>
+            <button class="toast-close-btn" id="toastClose" type="button" aria-label="Close notification">
+                &times;
+            </button>
+        </div>
+    </div>
+
+    <script type="module" src="app.js"></script>
+</body>
+</html>
